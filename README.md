@@ -23,7 +23,3 @@ Find places nearby within a short distance. Uses OpenStreetMap data via Overpass
 - Leaflet + MapLibre GL + OpenFreeMap
 - Overpass API (multiple fallback servers)
 - Service Worker for offline caching
-
-## Removed files
-- `js/lib/localforage.min.js` (no longer needed)
-- `js/storage.js` (no longer needed)
