@@ -1,6 +1,6 @@
 # Short distance 📍
 
-https://pholx.github.io/Short_distance
+pholx.github.io/Short_distance/
 
 Find places nearby within a short distance. Uses OpenStreetMap data via Overpass API and renders a dark vector map with MapLibre GL & Leaflet.
 
