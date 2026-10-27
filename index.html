@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Short distance</title>
+    <meta name="theme-color" content="#111827">
+    <meta name="description" content="Find places nearby within a short distance">
+
+    <!-- PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Short distance">
+
+    <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+    <link rel="dns-prefetch" href="https://tiles.openfreemap.org">
+    <link rel="preconnect" href="https://overpass.kumi.systems" crossorigin>
+    <link rel="dns-prefetch" href="https://overpass.kumi.systems">
+
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 850:'#1f2937', 900:'#111827', 950:'#030712' } } } } }
+    </script>
+    <link rel="stylesheet" href="./css/lib/leaflet.css">
+    <link rel="stylesheet" href="./css/lib/maplibre-gl.css">
+    <link rel="stylesheet" href="./css/app.css">
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col pb-safe">
+
+    <header class="bg-gray-900 shadow-md p-4 sticky top-0 z-20 flex justify-between items-center border-b border-gray-800">
+        <div>
+            <h1 class="text-lg font-bold text-blue-400 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                </svg>
+                Short distance
+            </h1>
+            <p class="text-[11px] text-gray-400">Find places nearby</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="btn-install" type="button" class="hidden text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg active:scale-95">
+                Install
+            </button>
+            <div class="flex items-center gap-1 bg-gray-800 px-2 py-1 rounded-full border border-gray-700">
+                <div id="status-dot" class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <span id="status-label" class="text-[10px] text-gray-300 uppercase tracking-wider font-semibold">Online</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col p-4 w-full max-w-2xl mx-auto space-y-4 pb-24">
+
+        <!-- Map -->
+        <div class="bg-gray-900 rounded-xl shadow-lg border border-gray-800 overflow-hidden relative">
+            <div id="map-overlay" class="absolute inset-0 bg-gray-900/90 z-20 flex flex-col items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-3"></div>
+                <p class="text-sm text-gray-300 font-medium">Loading map...</p>
+            </div>
+            <div id="map" style="height: 300px;"></div>
+            <div class="p-3 flex justify-between items-center bg-gray-900 border-t border-gray-800">
+                <div class="min-w-0">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Position</p>
+                    <p id="coord-display" class="font-mono text-xs text-gray-200 truncate">Searching...</p>
+                </div>
+                <button id="btn-refresh" type="button" title="Refresh GPS" class="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 space-y-3">
+            <div class="flex items-center gap-3">
+                <label for="radius-input" class="text-sm font-bold text-gray-300 whitespace-nowrap">Radius (m)</label>
+                <input id="radius-input" type="number" value="100" min="10" max="1000" step="10"
+                       class="w-24 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-base text-gray-100 focus:outline-none focus:border-blue-500">
+            </div>
+
+            <button id="btn-search-all" type="button"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold active:scale-[0.98] transition-all">
+                Short distance
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" data-category="attraction" class="cat-btn py-2 px-1 rounded-lg border text-xs font-semibold transition-colors bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">📸 Attractions</button>
+                <button type="button" data-category="activity" class="cat-btn py-2 px-1 rounded-lg border text-xs font-semibold transition-colors bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">🎯 Activities</button>
+                <button type="button" data-category="food" class="cat-btn py-2 px-1 rounded-lg border text-xs font-semibold transition-colors bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">🍽️ Food</button>
+                <button type="button" data-category="coffee" class="cat-btn py-2 px-1 rounded-lg border text-xs font-semibold transition-colors bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">☕ Coffee & Snacks</button>
+                <button type="button" data-category="essentials" class="cat-btn py-2 px-1 rounded-lg border text-xs font-semibold transition-colors bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">🛒 Essentials</button>
+                <button type="button" data-category="facilities" class="cat-btn py-2 px-1 rounded-lg border text-xs font-semibold transition-colors bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700">🚻 Facilities</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden text-center py-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="text-sm text-gray-400 mt-2">Searching...</p>
+        </div>
+
+        <!-- Status -->
+        <p id="status" class="text-center text-sm text-gray-400"></p>
+
+        <!-- Results -->
+        <div id="results-container" class="space-y-4"></div>
+
+    </main>
+
+    <div id="toast-container" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[60] flex flex-col items-center space-y-2 pointer-events-none w-11/12 max-w-md"></div>
+
+    <script src="./js/lib/leaflet.js"></script>
+    <script src="./js/lib/maplibre-gl.js"></script>
+    <script src="./js/lib/leaflet-maplibre-gl.js"></script>
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
